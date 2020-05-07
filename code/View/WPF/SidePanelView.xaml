@@ -6,13 +6,41 @@
              xmlns:local="clr-namespace:code.View.WPF"
              mc:Ignorable="d" 
              d:DesignHeight="900" d:DesignWidth="800">
-    <Grid>
+    <Grid Grid.Row="0">
         <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
             <RowDefinition Height="30"/>
             <RowDefinition Height="50"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0">
+        <Grid Grid.Row="0" x:Name="SheetSelector" Background="White">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <CheckBox x:Name="AllSheet" Grid.Column="0" Content="全选" Click="AllSheet_Click"/>
+                <Button x:Name="RefreshSheet" Grid.Column="1" Click="RefreshSheet_Click">刷新</Button>
+                <TextBox x:Name="Filtter" Grid.Column="2" Text="输入过滤条件"/>
+                <Button x:Name="FiltterBtn" Grid.Column="3" Click="FiltterBtn_Click">过滤</Button>
+            </Grid>
+
+            <ListView x:Name="SheetList" Grid.Row="1" FontSize="15">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <CheckBox Content="{Binding Name}" IsChecked="{Binding isSelect}" MouseDoubleClick="CheckBox_MouseDoubleClick"/>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Grid>
+        <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
                 <ColumnDefinition/>
@@ -20,7 +48,7 @@
             <Button x:Name="InputDataButton" Grid.Column="0" Click="InputDataButton_Click">导入数据</Button>
             <Button x:Name="OutputButton" Grid.Column="1" Click="OutputButton_Click">导出数据</Button>
         </Grid>
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2" Background="White">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="50"/>
@@ -34,16 +62,21 @@
                     <ColumnDefinition Width="50"/>
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" 
+                <Border Grid.Row="0" Grid.Column="0" BorderBrush="Gray" BorderThickness="0,0,0.5,0">
+                    <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" 
                            FontSize="15" Text="所属"/>
+                </Border>
                 <ComboBox x:Name="SideComboBox" Grid.Row="1" Grid.Column="0" FontSize="15"/>
-                <TextBlock Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"
+                <Border Grid.Row="0" Grid.Column="1" BorderBrush="Gray" BorderThickness="0.5,0,0,0">
+                    <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center"
                            FontSize="15" Text="科目"/>
+                </Border>
                 <ComboBox x:Name="MainItemComboBox" Grid.Row="1" Grid.Column="1" FontSize="15"/>
             </Grid>
             <Button x:Name="SearchButton" Grid.Column="1" Click="SearchButton_Click">搜索</Button>
         </Grid>
-        <ListView x:Name="DataList" Grid.Row="2" ScrollViewer.HorizontalScrollBarVisibility="Visible"
+        
+        <ListView x:Name="DataList" Grid.Row="3" ScrollViewer.HorizontalScrollBarVisibility="Visible"
                   FontSize="15">
             <ListView.View>
                 <GridView>

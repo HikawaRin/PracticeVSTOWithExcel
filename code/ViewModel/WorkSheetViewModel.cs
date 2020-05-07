@@ -8,6 +8,15 @@ using Excel = Microsoft.Office.Interop.Excel;
 
 namespace code.ViewModel
 {
+    public class Sheet
+    {
+        public bool isSelect { get; set; }
+
+        public string Name { get; set; }
+
+        public Excel.Worksheet _Sheet { get; set; }
+    }
+
     public class Certificate
     {
         public string Source { get; set; }
@@ -27,17 +36,43 @@ namespace code.ViewModel
     {
         private Excel.Workbook _workbook { get; set; }
 
+        public List<Sheet> Sheets { get; set; }
+
         public List<Certificate> Certificates { get; set; }
 
         public WorkSheetViewModel()
         {
             _workbook = Globals.ThisAddIn.Application.ActiveWorkbook;
+            Sheets = new List<Sheet>();
             Certificates = new List<Certificate>();
+            
+            // if(!_loaddata())
+            // {
+            //     Certificates.Clear();
+            // }
+        }
 
-            if(!_loaddata())
+        public bool LoadSheets()
+        {
+            Sheets.Clear();
+            foreach (Excel.Worksheet sheet in _workbook.Worksheets)
             {
-                Certificates.Clear();
+                Excel.Range range = sheet.UsedRange;
+
+                Excel.Range A1 = range.Range["A1"];
+                string Header = (A1.Value2 ?? "").ToString().Replace(" ", "");
+                if (Header == "记账凭证")
+                {
+                    Sheet s = new Sheet
+                    {
+                        isSelect = false,
+                        Name = sheet.Name,
+                        _Sheet = sheet
+                    };
+                    Sheets.Add(s);
+                }
             }
+            return true;
         }
 
         public void OutputData()
@@ -126,103 +161,143 @@ namespace code.ViewModel
             sheet.Range["C1"].Value = "贷方";
         }
 
-        private bool _loaddata()
+        public bool _loaddata()
         {
-            foreach (Excel.Worksheet sheet in _workbook.Worksheets)
+            Certificates.Clear();
+
+            foreach (Sheet sh in Sheets)
             {
-                Excel.Range range = sheet.UsedRange;
-                
-                Excel.Range Description = range.Find("摘要");
-                Excel.Range Mainitem = range.Find("科目");
-                Excel.Range Subitem = range.Find("子目");
-                Excel.Range JSide = range.Find("借方金额");
-                Excel.Range DSide = range.Find("贷方金额");
-                
-                if (Description == null && 
-                    Mainitem == null && 
-                    Subitem == null && 
-                    JSide == null && 
-                    DSide == null)
+                if (sh.isSelect == false)
                 {
-                    MessageBox.Show("跳过工作表:" + sheet.Name);
                     continue;
                 }
-
-                if (Description == null ||
-                    Mainitem == null ||
-                    Subitem == null ||
-                    JSide == null ||
-                    DSide == null)
+                else
                 {
-                    MessageBox.Show("工作表:" + sheet.Name + "存在格式问题");
-                    return false;
-                }
+                    Excel.Worksheet sheet = sh._Sheet; 
+                    Excel.Range range = sheet.UsedRange;
+
+                    // Excel.Range A1 = range.Range["A1"];
+                    Excel.Range Description = range.Range["A3"];
+                    string sDescription = (Description.Value2 ?? "").ToString().Replace(" ", "");
+                    Excel.Range Mainitem = range.Range["B3"];
+                    string sMainitem = (Mainitem.Value2 ?? "").ToString().Replace(" ", "");
+                    Excel.Range Subitem = range.Range["C3"];
+                    string sSubitem = (Subitem.Value2 ?? "").ToString().Replace(" ", "");
+                    Excel.Range JSide = range.Range["D3"];
+                    string sJSide = (JSide.Value2 ?? "").ToString().Replace(" ", "");
+                    Excel.Range DSide = range.Range["E3"];
+                    string sDSide = (DSide.Value2 ?? "").ToString().Replace(" ", "");
+
+                    // if (Description == null &&
+                    //     Mainitem == null &&
+                    //     Subitem == null &&
+                    //     JSide == null &&
+                    //     DSide == null)
+                    // {
+                    //     MessageBox.Show("跳过工作表:" + sheet.Name);
+                    //     continue;
+                    // }
+
+                    if (sDescription != "摘要" ||
+                        sMainitem != "科目" ||
+                        sSubitem != "子目" ||
+                        sJSide != "借方金额" ||
+                        sDSide != "贷方金额")
+                    {
+                        MessageBox.Show("工作表:" + sheet.Name + "存在格式问题");
+                        return false;
+                    }
+
+                    string sumstr = "";
+                    int cindex = 0;
+                    while (sumstr != "合计")
+                    {
+                        cindex++;
+                        string sumindex = "A" + cindex.ToString();
+                        Excel.Range Sum = range.Range[sumindex];
+                        sumstr = (Sum.Value2 ?? "").ToString().Replace(" ", "");
+                    }
+
+                    Excel.Range JSum = range.Range["D" + cindex.ToString()];
+                    string JSumValueStr = (JSum.Value2 ?? "").ToString().Replace(" ", "");
+                    decimal.TryParse(JSumValueStr, out decimal JSumValue);
+                    Excel.Range DSum = range.Range["E" + cindex.ToString()];
+                    string DSumValueStr = (DSum.Value2 ?? "").ToString().Replace(" ", "");
+                    decimal.TryParse(DSumValueStr, out decimal DSumValue);
+                    if (JSumValue != DSumValue)
+                    {
+                        sh._Sheet.Activate();
+                        MessageBox.Show("工作表:" + sheet.Name + "借贷不相等");
+                        Certificates.Clear();
+                        return false;
+                    }
 
                     for (int i = Mainitem.Row + 1; i <= range.Rows.Count; i++)
-                {
-                    Certificate c = new Certificate
                     {
-                        Source = sheet.Name
-                    };
-                    for (int j = range.Column; j <= range.Columns.Count; j++)
-                    {
-                        int ij = (int)'A' + j - 1;
-                        string s = ((char)ij).ToString() + i.ToString();
-                        Excel.Range cell = range.Range[s];
-                        string cell_value = (cell.Value2 ?? "").ToString().Replace(" ", "");
-                        if (string.IsNullOrWhiteSpace(cell_value))
+                        Certificate c = new Certificate
                         {
-                            continue;
-                        }
-
-                        if (j == Description.Column)
+                            Source = sheet.Name
+                        };
+                        for (int j = range.Column; j <= range.Columns.Count; j++)
                         {
-                            c.Description = cell_value;
-                        }
-                        else if (j == Mainitem.Column)
-                        {
-                            c.MainItem = cell_value;
-                        }
-                        else if (j == Subitem.Column)
-                        {
-                            c.SubItem = cell_value;
-                        }
-                        else if (j == JSide.Column)
-                        {
-                            c.Side = "借方";
-                            if (decimal.TryParse(cell_value, out decimal result))
+                            int ij = (int)'A' + j - 1;
+                            string s = ((char)ij).ToString() + i.ToString();
+                            Excel.Range cell = range.Range[s];
+                            string cell_value = (cell.Value2 ?? "").ToString().Replace(" ", "");
+                            if (string.IsNullOrWhiteSpace(cell_value))
                             {
-                                c.Money = result;
+                                continue;
                             }
-                        }
-                        else if (j == DSide.Column)
-                        {
-                            if (c.Side == "借方")
+
+                            if (j == Description.Column)
                             {
-                                Certificate jc = new Certificate
+                                c.Description = cell_value;
+                            }
+                            else if (j == Mainitem.Column)
+                            {
+                                c.MainItem = cell_value;
+                            }
+                            else if (j == Subitem.Column)
+                            {
+                                c.SubItem = cell_value;
+                            }
+                            else if (j == JSide.Column)
+                            {
+                                c.Side = "借方";
+                                if (decimal.TryParse(cell_value, out decimal result))
                                 {
-                                    Description = c.Description,
-                                    MainItem = c.MainItem,
-                                    Side = c.Side,
-                                    Money = c.Money,
-                                    Source = c.Source,
-                                    SubItem = c.SubItem
-                                };
-                                if (!string.IsNullOrWhiteSpace(jc.MainItem) && jc.Money != 0)
-                                {
-                                    Certificates.Add(jc);
+                                    c.Money = result;
                                 }
                             }
-                            c.Side = "贷方";
-                            if (decimal.TryParse(cell_value, out decimal result))
+                            else if (j == DSide.Column)
                             {
-                                c.Money = result;
+                                if (c.Side == "借方")
+                                {
+                                    Certificate jc = new Certificate
+                                    {
+                                        Description = c.Description,
+                                        MainItem = c.MainItem,
+                                        Side = c.Side,
+                                        Money = c.Money,
+                                        Source = c.Source,
+                                        SubItem = c.SubItem
+                                    };
+                                    if (!string.IsNullOrWhiteSpace(jc.MainItem) && jc.Money != 0)
+                                    {
+                                        Certificates.Add(jc);
+                                    }
+                                }
+                                c.Side = "贷方";
+                                if (decimal.TryParse(cell_value, out decimal result))
+                                {
+                                    c.Money = result;
+                                }
                             }
                         }
-                    }
-                    if (!string.IsNullOrWhiteSpace(c.MainItem) && c.Money != 0)
-                    {
-                        Certificates.Add(c);
+                        if (!string.IsNullOrWhiteSpace(c.MainItem) && c.Money != 0)
+                        {
+                            Certificates.Add(c);
+                        }
                     }
                 }
             }

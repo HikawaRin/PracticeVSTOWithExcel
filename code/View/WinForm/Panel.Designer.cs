@@ -35,20 +35,22 @@
             // elementHost1
             // 
             this.elementHost1.Location = new System.Drawing.Point(0, 0);
+            this.elementHost1.Margin = new System.Windows.Forms.Padding(2);
             this.elementHost1.Name = "elementHost1";
-            this.elementHost1.Size = new System.Drawing.Size(800, 900);
+            this.elementHost1.Size = new System.Drawing.Size(500, 800);
             this.elementHost1.TabIndex = 0;
             this.elementHost1.Text = "elementHost1";
             this.elementHost1.Child = this.sidePanelView1;
             // 
             // Panel
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 24F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.Controls.Add(this.elementHost1);
+            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.Name = "Panel";
-            this.Size = new System.Drawing.Size(803, 903);
+            this.Size = new System.Drawing.Size(502, 802);
             this.ResumeLayout(false);
 
         }
